@@ -143,6 +143,13 @@ class SeTabDelegate(
                                                           isAllTab)
   }
 
+  /**
+   * @return true if the popup should be closed, false otherwise
+   */
+  suspend fun performExtendedAction(item: SeItemData): Boolean {
+    return providers.getValue().performExtendedAction(item)
+  }
+
   override fun dispose() {}
 
   private class Providers(
@@ -234,6 +241,12 @@ class SeTabDelegate(
       }
       else {
         frontendProvidersFacade?.getUpdatedPresentation(item)
+      }
+    }
+
+    suspend fun performExtendedAction(item: SeItemData): Boolean {
+      return localProviders[item.providerId]?.performExtendedAction(item) ?: run {
+        frontendProvidersFacade?.performExtendedAction(item) ?: false
       }
     }
   }

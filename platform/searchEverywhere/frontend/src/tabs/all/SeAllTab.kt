@@ -72,6 +72,10 @@ class SeAllTab(private val delegate: SeTabDelegate) : SeTab {
     return delegate.getUpdatedPresentation(item)
   }
 
+  override suspend fun performExtendedAction(item: SeItemData): Boolean {
+    return delegate.performExtendedAction(item)
+  }
+
   override fun dispose() {
     Disposer.dispose(delegate)
   }

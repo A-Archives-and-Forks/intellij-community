@@ -17,18 +17,20 @@ import com.intellij.platform.scopes.SearchScopesInfo
 import com.intellij.platform.searchEverywhere.*
 import com.intellij.platform.searchEverywhere.backend.providers.ScopeChooserActionProviderDelegate
 import com.intellij.platform.searchEverywhere.providers.*
+import com.intellij.platform.searchEverywhere.providers.getExtendedInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.annotations.ApiStatus
 import org.jetbrains.annotations.Nls
+import java.awt.event.InputEvent
 
 @ApiStatus.Internal
-class SeTextSearchItem(val item: SearchEverywhereItem, private val weight: Int, val extendedDescription: String?, val isMultiSelectionSupported: Boolean) : SeItem {
+class SeTextSearchItem(val item: SearchEverywhereItem, private val weight: Int, val extendedInfo: SeExtendedInfo, val isMultiSelectionSupported: Boolean) : SeItem {
   override fun weight(): Int = weight
 
   override suspend fun presentation(): SeItemPresentation =
     SeTextSearchItemPresentation(item.presentableText,
-                                 extendedDescription,
+                                 extendedInfo,
                                  item.presentation.text.map { chunk ->
                                    chunk.toSerializableTextChunk()
                                  },
@@ -39,9 +41,10 @@ class SeTextSearchItem(val item: SearchEverywhereItem, private val weight: Int, 
 
 @ApiStatus.Internal
 class SeTextItemsProvider(project: Project, private val contributorWrapper: SeAsyncWeightedContributorWrapper<Any>) : SeItemsProvider, SeSearchScopesProvider {
+  private val contributor = contributorWrapper.contributor
   override val id: String get() = SeProviderIdUtils.TEXT_ID
   override val displayName: @Nls String
-    get() = contributorWrapper.contributor.fullGroupName
+    get() = contributor.fullGroupName
   private val findModel = FindManager.getInstance(project).findInProjectModel
   private val scopeProviderDelegate = ScopeChooserActionProviderDelegate(contributorWrapper)
 
@@ -78,7 +81,7 @@ class SeTextItemsProvider(project: Project, private val contributorWrapper: SeAs
           val weight = t.weight
           val legacyItem = t.item as? SearchEverywhereItem ?: return true
 
-          return collector.put(SeTextSearchItem(legacyItem, weight, getExtendedDescription(legacyItem), contributorWrapper.contributor.isMultiSelectionSupported))
+          return collector.put(SeTextSearchItem(legacyItem, weight, contributor.getExtendedInfo(legacyItem), contributorWrapper.contributor.isMultiSelectionSupported))
         }
       })
     }
@@ -87,20 +90,12 @@ class SeTextItemsProvider(project: Project, private val contributorWrapper: SeAs
   override suspend fun itemSelected(item: SeItem, modifiers: Int, searchText: String): Boolean {
     val legacyItem = (item as? SeTextSearchItem)?.item ?: return false
     return withContext(Dispatchers.EDT) {
-      contributorWrapper.contributor.processSelectedItem(legacyItem, modifiers, searchText)
+      contributor.processSelectedItem(legacyItem, modifiers, searchText)
     }
   }
 
-  fun getExtendedDescription(item: SearchEverywhereItem): String? {
-    return contributorWrapper.contributor.getExtendedDescription(item)
-  }
-
   override suspend fun canBeShownInFindResults(): Boolean {
-    return contributorWrapper.contributor.showInFindResults()
-  }
-
-  override fun dispose() {
-    Disposer.dispose(contributorWrapper)
+    return contributor.showInFindResults()
   }
 
   private fun applyScope(scopeId: String?) {
@@ -109,5 +104,16 @@ class SeTextItemsProvider(project: Project, private val contributorWrapper: SeAs
 
   override suspend fun getSearchScopesInfo(): SearchScopesInfo? {
     return scopeProviderDelegate.searchScopesInfo.getValue()
+  }
+
+  override suspend fun performExtendedAction(item: SeItem): Boolean {
+    val legacyItem = (item as? SeTextSearchItem)?.item ?: return false
+    return withContext(Dispatchers.EDT) {
+      contributor.processSelectedItem(legacyItem, InputEvent.SHIFT_DOWN_MASK, "")
+    }
+  }
+
+  override fun dispose() {
+    Disposer.dispose(contributorWrapper)
   }
 }

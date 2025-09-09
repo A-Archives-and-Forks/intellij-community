@@ -103,6 +103,11 @@ interface SeRemoteApi : RemoteApi<Unit> {
 
   suspend fun getUpdatedPresentation(projectId: ProjectId, item: SeItemData): SeItemPresentation?
 
+  suspend fun performExtendedAction(projectId: ProjectId,
+                                    sessionRef: DurableRef<SeSessionEntity>,
+                                    itemData: SeItemData,
+                                    isAllTab: Boolean): Boolean
+
   companion object {
     @JvmStatic
     suspend fun getInstance(): SeRemoteApi {

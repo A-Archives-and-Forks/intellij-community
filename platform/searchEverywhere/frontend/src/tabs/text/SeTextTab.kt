@@ -16,7 +16,6 @@ import com.intellij.platform.searchEverywhere.frontend.SeEmptyResultInfo
 import com.intellij.platform.searchEverywhere.frontend.SeFilterEditor
 import com.intellij.platform.searchEverywhere.frontend.SeTab
 import com.intellij.platform.searchEverywhere.frontend.resultsProcessing.SeTabDelegate
-import com.intellij.platform.searchEverywhere.impl.SeRemoteApi
 import fleet.kernel.DurableRef
 import com.intellij.platform.searchEverywhere.utils.SuspendLazyProperty
 import com.intellij.platform.searchEverywhere.utils.initAsync
@@ -60,6 +59,10 @@ class SeTextTab(private val delegate: SeTabDelegate, registerShortcut: (AnAction
 
     val findModel = FindManager.getInstance(project).findInProjectModel
     return SeTextSearchOptions(findModel.isCaseSensitive, findModel.isWholeWordsOnly, findModel.isRegularExpressions)
+  }
+
+  override suspend fun performExtendedAction(item: SeItemData): Boolean {
+    return delegate.performExtendedAction(item)
   }
 
   override fun dispose() {

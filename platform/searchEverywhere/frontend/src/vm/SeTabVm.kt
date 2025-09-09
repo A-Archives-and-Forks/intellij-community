@@ -199,6 +199,13 @@ class SeTabVm(
   suspend fun getUpdatedPresentation(item: SeItemData): SeItemPresentation? {
     return tab.getUpdatedPresentation(item)
   }
+
+  /**
+   * @return true if the popup should be closed, false otherwise
+   */
+  suspend fun performExtendedAction(item: SeItemData) : Boolean {
+    return tab.performExtendedAction(item)
+  }
 }
 
 private const val ESSENTIALS_THROTTLE_DELAY: Long = 100
